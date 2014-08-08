@@ -1,0 +1,142 @@
+<!DOCTYPE HTML>
+<html lang="en">
+  <head>
+    <title>WebGL Globe | jl</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="/globe/css/style.css">
+  </head>
+  <body>
+    <div id="container"></div>
+
+    <div id="info">
+      <strong><a href="http://www.chromeexperiments.com/globe">WebGL Globe</a></strong><span class="bull">&bull;</span> HACKED BY Ryan Dewey, Matt Tsang &amp; Dawit Elias<span class="bull">&bull;</span> Data acquired from <a href="http://sedac.ciesin.columbia.edu/gpw/">SEDAC</a>
+    </div>
+
+    <div id="currentInfo">
+      <a href="index.html"><span id="ag" class="year">AG</span></a>
+      <a href="jw.html"><span id="jw" class="year">JW</span></a>
+      <a href="#"><span id="jl" class="year">JL</span></a>
+      <a href="bma.html"><span id="bma" class="year">BMA</span></a>
+    </div>
+
+    <div id="title">Jacquie Lawson E-Cards Sent</div>
+
+    <script type="text/javascript" src="/globe/third-party/Detector.js"></script>
+    <script type="text/javascript" src="/globe/third-party/three.min.js"></script>
+    <script type="text/javascript" src="/globe/third-party/Tween.js"></script>
+    <script type="text/javascript" src="/globe/globe.js"></script>
+
+    <input id="toggle" type="submit" value="Toggle Rotation" onclick="toggleRotation()">
+
+    <script type="text/javascript">
+
+      // If webGL is compatible...
+        if(!Detector.webgl){
+          Detector.addGetWebGLMessage();
+        } else {
+
+          // years marks the different 'series' of data provided in the json files
+          // this template breaks if we change the variable name.. figure out later
+          
+          var years = ['ag', 'jw', 'jl','bma'];
+          
+          // container to hold globe
+          var container = document.getElementById('container');
+          
+          // create a globe object
+          var globe = new DAT.Globe(container);
+
+          console.log(globe);
+          var i, tweens = [];
+
+          // assign series 
+          var setdataseries = function(globe, t) {
+            return function() {
+              new TWEEN.Tween(globe).to({time: t/years.length},500).easing(TWEEN.Easing.Cubic.EaseOut).start();
+              var y = document.getElementById(years[t]);
+              if (y.getAttribute('class') === 'year active') {
+                return;
+              }
+              var yy = document.getElementsByClassName('year');
+              for(i=0; i<yy.length; i++) {
+                yy[i].setAttribute('class','year');
+              }
+            };
+          };
+
+          // for(var i = 0; i<years.length; i++) {
+          //   var y = document.getElementById(years[i]);
+          //   y.addEventListener('mouseover', setdataseries(globe,i), false);
+          // }
+
+          //start tween.js easing, etc.
+          TWEEN.start();
+
+          // create GET requests for each json file
+          var xhr, xhr1, xhr2, xhr3;
+
+          xhr = new XMLHttpRequest();
+          xhr.open('GET', '/globe/json/ag.json', true);
+
+          xhr1 = new XMLHttpRequest();
+          xhr1.open('GET', '/globe/json/jw.json', true);
+
+          xhr2 = new XMLHttpRequest();
+          xhr2.open('GET', '/globe/json/jl.json', true);
+
+          xhr3 = new XMLHttpRequest();
+          xhr3.open('GET', '/globe/json/bma.json', true);
+
+          // loop thru json
+          function parseJSON(e) {
+
+            // if the request is complete
+            if (this.readyState === 4) {
+              //if the get request is good
+              if (this.status === 200) {
+                //assign parsed json to var data
+                var data = JSON.parse(this.responseText);
+                window.data = data;
+                
+                for (i=0;i<data.length;i++) {
+                  var row = data[i][1];
+                  
+                  // lat, long, #ecard sends -->  j=0, j=1, j=2
+                  // j equals every '2' --> this assigns j to #ecard sends
+                  // if j is magnitude 
+                  for (j=2;j<row.length;j+=3) {
+                        // convert #ecard sends to arbitraty magnitude value
+                        // change 15,000 below to change overall sizing scale of spikes on globe
+                        row[j] = row[j]/15000;
+                  }
+                  // create 'magnitude'
+                  globe.addData(row, {format: 'magnitude', name: data[i][0], animated: true});
+                }
+                globe.createPoints();
+                setdataseries(globe,0)();
+                
+                //allow the globe to animate in when first rendering
+                globe.animate();
+
+                // remove loading gif
+                document.body.style.backgroundImage = 'none'; 
+              }
+            }
+          }
+
+          xhr.onreadystatechange = parseJSON;
+          xhr1.onreadystatechange = parseJSON;
+          xhr2.onreadystatechange = parseJSON;
+          xhr3.onreadystatechange = parseJSON;
+
+          // only send 'ag' request
+          // load other requests when they are clicked
+          // xhr.send(null)
+          xhr2.send(null);
+          // xhr1.send(null);
+          // xhr3.send(null);     
+      }
+    </script>
+  </body>
+
+</html>
